@@ -1,17 +1,17 @@
-// Config store — PostgreSQL when DATABASE_URL is set, flat-file fallback otherwise.
+// Config store — MongoDB when DATABASE_URL is set, flat-file fallback otherwise.
 // The active backend is printed at startup so you always know which one is in use.
 
 let impl;
 
 if (process.env.DATABASE_URL) {
-  // Prefer PostgreSQL — this is the production path.
-  // If the module fails to load (missing 'pg', bad URL, etc.) throw immediately
+  // Prefer MongoDB — this is the production path.
+  // If the module fails to load (missing 'mongodb', bad URI, etc.) throw immediately
   // rather than silently falling back to a flat file with no data.
   try {
-    impl = require('./pgStore');
-    console.log('[configStore] Backend: PostgreSQL (DATABASE_URL is set)');
+    impl = require('./mongoStore');
+    console.log('[configStore] Backend: MongoDB (DATABASE_URL is set)');
   } catch (e) {
-    console.error('[configStore] FATAL: DATABASE_URL is set but pgStore failed to load.', e);
+    console.error('[configStore] FATAL: DATABASE_URL is set but mongoStore failed to load.', e);
     throw e;
   }
 } else {
