@@ -1,0 +1,20 @@
+{
+  "name": "zcheck-bot",
+  "version": "1.0.0",
+  "description": "ZCheck — a Discord bot that verifies YouTube subscriptions via AI vision (Google Gemini). Admins set a reference screenshot; the bot compares it against user uploads and assigns a role on match. Built By Arsh.",
+  "author": "Arsh (https://discord.gg/NWwZQaFzc5)",
+  "license": "SEE LICENSE IN LICENSE.md",
+  "main": "src/index.js",
+  "scripts": {
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "discord.js": "latest",
+    "dotenv": "latest",
+    "image-size": "latest",
+    "pg": "^8.21.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

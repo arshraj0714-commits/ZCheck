@@ -1,0 +1,73 @@
+{
+    "_comment": "DO NOT EDIT: FILE GENERATED AUTOMATICALLY BY PTERODACTYL PANEL - PTERODACTYL.IO",
+    "meta": {
+        "version": "PTDL_v2",
+        "update_url": null
+    },
+    "exported_at": "2025-07-16T00:00:00+00:00",
+    "name": "ZCheck Verifier Bot",
+    "author": "arsh@zcheck",
+    "uuid": "e88ec3b4-6f1c-490a-a13a-2d3b476abbc9",
+    "description": "ZCheck \u2014 a Discord bot that verifies YouTube channel subscriptions using Google Gemini AI vision. Admins upload a reference screenshot; the bot compares it against user uploads and assigns a role on match. Built By Arsh.",
+    "features": null,
+    "docker_images": {
+        "ghcr.io/pterodactyl/yolks:nodejs_20": "ghcr.io/pterodactyl/yolks:nodejs_20"
+    },
+    "file_denylist": [],
+    "startup": "node src/index.js",
+    "config": {
+        "files": "{}",
+        "startup": "{\"done\": \"Ready as\"}",
+        "logs": "{}",
+        "stop": "^C"
+    },
+    "scripts": {
+        "installation": {
+            "script": "#!/bin/bash\ncd /mnt/server\nnpm install --production\n",
+            "container": "ghcr.io/pterodactyl/installers:debian",
+            "entrypoint": "bash"
+        }
+    },
+    "variables": [
+        {
+            "name": "Discord Token",
+            "description": "Your Discord bot token from discord.com/developers/applications \u2192 Bot \u2192 Token.",
+            "env_variable": "DISCORD_TOKEN",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:200",
+            "field_type": "text"
+        },
+        {
+            "name": "Client ID",
+            "description": "Your Discord Application ID from discord.com/developers/applications \u2192 General Information.",
+            "env_variable": "CLIENT_ID",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:50",
+            "field_type": "text"
+        },
+        {
+            "name": "Gemini API Key",
+            "description": "Google Gemini API key from aistudio.google.com/app/apikey. Used for AI image verification.",
+            "env_variable": "GEMINI_API_KEY",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:200",
+            "field_type": "text"
+        },
+        {
+            "name": "Database URL",
+            "description": "PostgreSQL connection string. e.g. postgresql://user:pass@host:5432/dbname \u2014 Supabase, Railway, or any Postgres provider works.",
+            "env_variable": "DATABASE_URL",
+            "default_value": "",
+            "user_viewable": true,
+            "user_editable": true,
+            "rules": "required|string|max:500",
+            "field_type": "text"
+        }
+    ]
+}
