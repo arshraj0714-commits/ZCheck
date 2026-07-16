@@ -61,7 +61,7 @@
         },
         {
             "name": "Database URL",
-            "description": "PostgreSQL connection string. e.g. postgresql://user:pass@host:5432/dbname \u2014 Supabase, Railway, or any Postgres provider works.",
+            "description": "MongoDB connection string. e.g. mongodb+srv://user:pass@cluster0.xxx.mongodb.net/zcheck?retryWrites=true&w=majority \u2014 MongoDB Atlas, Railway, or any Mongo provider works.",
             "env_variable": "DATABASE_URL",
             "default_value": "",
             "user_viewable": true,
