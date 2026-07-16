@@ -1,12 +1,21 @@
 /*
  * ============================================================
- *  ZCheck Verifier Bot — Gemini Vision Service
+ *  ZCheck Verifier Bot — Groq Vision Service
+ *  (was Gemini — switched to Groq's free Llama 4 Scout vision model)
  *  Built By Arsh
+ * ============================================================
+ *
+ *  Uses Groq's OpenAI-compatible Chat Completions API:
+ *    POST https://api.groq.com/openai/v1/chat/completions
+ *    Authorization: Bearer $GROQ_API_KEY
+ *
+ *  Get a free API key: https://console.groq.com/keys
+ *  Env var: GROQ_API_KEY
  * ============================================================
  */
 
-const GEMINI_MODEL    = 'gemini-2.0-flash';
-const GEMINI_ENDPOINT = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
+const GROQ_MODEL    = 'meta-llama/llama-4-scout-17b-16e-instruct';
+const GROQ_ENDPOINT = 'https://api.groq.com/openai/v1/chat/completions';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -30,48 +39,61 @@ function parseDataUrl(dataUrl) {
 }
 
 function parseJson(text) {
-  const match = text.match(/\{[\s\S]*\}/);
-  return match ? JSON.parse(match[0]) : JSON.parse(text.trim());
+  // Strip markdown code fences if present
+  const cleaned = text.replace(/```(?:json)?\s*/gi, '').replace(/```\s*$/i, '').trim();
+  const match = cleaned.match(/\{[\s\S]*\}/);
+  return match ? JSON.parse(match[0]) : JSON.parse(cleaned);
 }
 
 // ── Core API call ────────────────────────────────────────────────────────────
 
 /**
- * Call Gemini with an array of parts.
+ * Call Groq with an array of parts (OpenAI-compatible message content format).
  * Each part is one of:
- *   { type: 'text', text: '...' }
- *   { type: 'image', mimeType: 'image/png', data: '<base64>' }
+ *   { type: 'text',  text: '...' }
+ *   { type: 'image', mimeType: 'image/png', data: '<base64>', url?: '<full data url>' }
  */
-async function callGemini(parts) {
-  const apiKey = process.env.GEMINI_API_KEY;
-  if (!apiKey) throw new Error('Missing GEMINI_API_KEY environment variable');
+async function callGroq(parts) {
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) throw new Error('Missing GROQ_API_KEY environment variable');
 
-  const geminiParts = parts.map((p) => {
-    if (p.type === 'text')  return { text: p.text };
-    if (p.type === 'image') return { inline_data: { mime_type: p.mimeType, data: p.data } };
+  // Build OpenAI-compatible content array
+  const content = parts.map((p) => {
+    if (p.type === 'text') {
+      return { type: 'text', text: p.text };
+    }
+    if (p.type === 'image') {
+      const url = p.url ?? `data:${p.mimeType};base64,${p.data}`;
+      return { type: 'image_url', image_url: { url } };
+    }
     throw new Error(`Unknown part type: ${p.type}`);
   });
 
-  const res = await fetch(`${GEMINI_ENDPOINT}?key=${apiKey}`, {
+  const res = await fetch(GROQ_ENDPOINT, {
     method:  'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: {
+      'Content-Type':  'application/json',
+      'Authorization': `Bearer ${apiKey}`,
+    },
     body: JSON.stringify({
-      contents: [{ parts: geminiParts }],
-      generationConfig: { temperature: 0.1, maxOutputTokens: 1024 },
+      model: GROQ_MODEL,
+      messages: [{ role: 'user', content }],
+      temperature: 0.1,
+      max_tokens: 1024,
     }),
   });
 
   if (!res.ok) {
     const err = await res.text().catch(() => '');
-    throw new Error(`Gemini API ${res.status}: ${err.slice(0, 200)}`);
+    throw new Error(`Groq API ${res.status}: ${err.slice(0, 300)}`);
   }
 
   const json = await res.json().catch(() => null);
-  const rawText = json?.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+  const rawText = json?.choices?.[0]?.message?.content ?? '';
 
   if (!rawText) {
-    const reason = json?.candidates?.[0]?.finishReason ?? 'unknown';
-    throw new Error(`Gemini returned empty response (finishReason=${reason})`);
+    const reason = json?.choices?.[0]?.finish_reason ?? 'unknown';
+    throw new Error(`Groq returned empty response (finish_reason=${reason})`);
   }
 
   return rawText;
@@ -110,12 +132,12 @@ Rules:
 
   let contentText;
   try {
-    contentText = await callGemini([
+    contentText = await callGroq([
       { type: 'text',  text: prompt },
       { type: 'image', mimeType, data },
     ]);
   } catch (err) {
-    console.error('[analyzeReferenceImage] Gemini error:', err.message);
+    console.error('[analyzeReferenceImage] Groq error:', err.message);
     return null;
   }
 
@@ -145,7 +167,7 @@ Rules:
 
 /**
  * Verify a user's screenshot by directly comparing it against the admin's
- * reference image. Gemini sees BOTH images in a single request — no text
+ * reference image. Groq sees BOTH images in a single request — no text
  * intermediary — giving the highest possible visual accuracy.
  */
 async function verifyScreenshotWithGemini({
@@ -155,7 +177,7 @@ async function verifyScreenshotWithGemini({
   youtubeHandle,
   youtubeTitle,
 }) {
-  if (!process.env.GEMINI_API_KEY) {
+  if (!process.env.GROQ_API_KEY) {
     return { ok: false, publicReason: 'missing_gemini_key' };
   }
 
@@ -232,9 +254,9 @@ Return ONLY valid JSON — no markdown, no explanation:
 
   let contentText;
   try {
-    contentText = await callGemini(parts);
+    contentText = await callGroq(parts);
   } catch (fetchErr) {
-    console.error('[verifyScreenshot] Gemini error:', fetchErr?.message ?? fetchErr);
+    console.error('[verifyScreenshot] Groq error:', fetchErr?.message ?? fetchErr);
     return { ok: false, publicReason: 'vision_service_error' };
   }
 
