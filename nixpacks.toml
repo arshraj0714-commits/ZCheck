@@ -1,22 +1,31 @@
-#!/bin/bash
-set -e
-cd "$(dirname "$0")"
+# Nixpacks config for ZCheck Discord Bot
+# Docs: https://nixpacks.com/docs/configuration/file
+# Place this file at the root of your repo (next to package.json).
 
-echo "[start] Working directory: $(pwd)"
+# ── Setup phase: install Node.js 20 from nixpkgs ─────────────────────────────
+[phases.setup]
+nixPkgs = ["nodejs_20"]
 
-# Ensure mongodb is installed
-if [ ! -d "node_modules/mongodb" ]; then
-  echo "[start] node_modules/mongodb is MISSING — running clean install..."
-  rm -rf node_modules package-lock.json
-  npm install --omit=dev --no-audit --no-fund
-  if [ ! -d "node_modules/mongodb" ]; then
-    echo "FATAL: mongodb STILL not installed after npm install."
-    exit 1
-  fi
-  echo "[start] mongodb package installed successfully."
-else
-  echo "[start] node_modules/mongodb is present — skipping install."
-fi
+# ── Install phase: clean install of dependencies ─────────────────────────────
+# Wipe node_modules + lockfile first to avoid stale `pg` from previous deploys.
+[phases.install]
+cmds = [
+  "rm -rf node_modules package-lock.json",
+  "npm install --omit=dev --no-audit --no-fund"
+]
 
-echo "[start] Launching ZCheck bot..."
-exec node src/index.js
+# ── Build phase: nothing to compile (plain JS) ───────────────────────────────
+[phases.build]
+dependsOn = ["install"]
+cmds = ["echo 'No build step needed for ZCheck bot'"]
+
+# ── Start phase: use the self-installing wrapper ─────────────────────────────
+# start.sh checks if mongodb is installed and runs npm install if missing,
+# then launches the bot. Bulletproof against broken build caches.
+[start]
+cmd = "bash start.sh"
+
+# ── Runtime variables ────────────────────────────────────────────────────────
+[variables]
+NODE_ENV = "production"
+NIXPACKS_METADATA = "zcheck-bot"
