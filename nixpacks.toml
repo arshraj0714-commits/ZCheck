@@ -1,0 +1,31 @@
+# Nixpacks config for ZCheck Discord Bot
+# Docs: https://nixpacks.com/docs/configuration/file
+# Place this file at the root of your repo (next to package.json).
+
+# ── Setup phase: install Node.js 20 from nixpkgs ─────────────────────────────
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+nixOverlays = []
+nixLibs = []
+
+# ── Install phase: clean install of dependencies ─────────────────────────────
+# Wipe node_modules + lockfile first to avoid stale `pg` from previous deploys.
+[phases.install]
+cmds = [
+  "rm -rf node_modules package-lock.json",
+  "npm install --omit=dev"
+]
+
+# ── Build phase: nothing to compile (plain JS) ───────────────────────────────
+[phases.build]
+dependsOn = ["install"]
+cmds = ["echo 'No build step needed for ZCheck bot'"]
+
+# ── Start phase: launch the bot ──────────────────────────────────────────────
+[start]
+cmd = "node src/index.js"
+
+# ── Health check: Discord bots don't expose HTTP, so disable it ──────────────
+[variables]
+NODE_ENV = "production"
+NIXPACKS_METADATA = "zcheck-bot"
